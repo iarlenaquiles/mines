@@ -1,15 +1,55 @@
-import React from 'react';
-import {StyleSheet, Text, useColorScheme, View} from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {SafeAreaView, StyleSheet, Text, View, Alert} from 'react-native';
 
-import {Colors} from 'react-native/Libraries/NewAppScreen';
 import params from './src/params';
-import Field from './src/components/Field';
+import MineField from './src/components/MineField';
+import {
+  createMinedBoard,
+  cloneBoard,
+  openField,
+  hadExplosion,
+  wonGame,
+  showMines,
+} from './src/functions';
 
 const App = () => {
-  const isDarkMode = useColorScheme() === 'dark';
+  const [board, setBoard] = useState([]);
+  const [won, setWon] = useState(false);
+  const [lost, setLost] = useState(false);
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  const minesAmount = () => {
+    const cols = params.getColumnsAmount();
+    const rows = params.getRowsAmount();
+    return Math.ceil(cols * rows * params.difficultLevel);
+  };
+
+  useEffect(() => {
+    const cols = params.getColumnsAmount();
+    const rows = params.getRowsAmount();
+    const minesCount = minesAmount();
+    const mines = createMinedBoard(rows, cols, minesCount);
+    setBoard(mines);
+  }, []);
+
+  const onOpenField = (row, column) => {
+    const boardCloned = cloneBoard(board);
+
+    openField(boardCloned, row, column);
+    const lostGame = hadExplosion(boardCloned);
+
+    const wonSesion = wonGame(boardCloned);
+
+    if (lostGame) {
+      showMines(boardCloned);
+      Alert.alert('Perdeueueueueu!', 'Que burrao');
+    }
+
+    if (wonSesion) {
+      Alert.alert('Parabens!', 'se garantiu');
+    }
+    setLost(lostGame);
+    setWon(wonSesion);
+    setBoard(boardCloned);
   };
 
   return (
@@ -19,34 +59,21 @@ const App = () => {
         {params.getRowsAmount()}x{params.getColumnsAmount()}
       </Text>
 
-      <Field />
-      <Field opened />
-      <Field opened nearMines={1} />
-      <Field opened nearMines={2} />
-      <Field opened nearMines={3} />
-      <Field opened nearMines={4} />
-      <Field opened nearMines={5} />
-      <Field opened nearMines={6} />
+      <SafeAreaView style={styles.board}>
+        <MineField board={board} onOpenField={onOpenField} />
+      </SafeAreaView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+    flex: 1,
+    justifyContent: 'flex-end',
   },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
+  board: {
+    alignItems: 'center',
+    backgroundColor: '#AAA',
   },
 });
 
