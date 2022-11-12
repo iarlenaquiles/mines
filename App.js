@@ -3,6 +3,8 @@ import {SafeAreaView, StyleSheet, Text, View, Alert} from 'react-native';
 
 import params from './src/params';
 import MineField from './src/components/MineField';
+import Header from './src/components/Header';
+import LevelSelection from './src/screens/LevelSelection';
 import {
   createMinedBoard,
   cloneBoard,
@@ -10,10 +12,13 @@ import {
   hadExplosion,
   wonGame,
   showMines,
+  invertFlag,
+  flagsUsed,
 } from './src/functions';
 
 const App = () => {
   const [board, setBoard] = useState([]);
+  const [levelSelection, setLevelSelection] = useState(false);
   const [won, setWon] = useState(false);
   const [lost, setLost] = useState(false);
 
@@ -23,12 +28,17 @@ const App = () => {
     return Math.ceil(cols * rows * params.difficultLevel);
   };
 
-  useEffect(() => {
+  const createNewGame = () => {
     const cols = params.getColumnsAmount();
     const rows = params.getRowsAmount();
     const minesCount = minesAmount();
     const mines = createMinedBoard(rows, cols, minesCount);
     setBoard(mines);
+    setLevelSelection(false);
+  };
+
+  useEffect(() => {
+    createNewGame();
   }, []);
 
   const onOpenField = (row, column) => {
@@ -52,15 +62,40 @@ const App = () => {
     setBoard(boardCloned);
   };
 
+  const onSelectField = (row, column) => {
+    const boardCloned = cloneBoard(board);
+    invertFlag(boardCloned, row, column);
+    const wonSesion = wonGame(boardCloned);
+    setBoard(boardCloned);
+    if (wonSesion) {
+      Alert.alert('Parabéns', 'voce ganhou');
+    }
+  };
+
+  const onLevelSelect = level => {
+    params.difficultLevel = level;
+    createNewGame();
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.welcome}>Iniciando o mines</Text>
-      <Text style={styles.instructions}>
-        {params.getRowsAmount()}x{params.getColumnsAmount()}
-      </Text>
+      <LevelSelection
+        isVisible={levelSelection}
+        onLevelSelected={onLevelSelect}
+        onCancel={() => setLevelSelection(false)}
+      />
+      <Header
+        flagsLeft={minesAmount() - flagsUsed(board)}
+        onNewGame={() => createNewGame()}
+        onFlagPress={() => setLevelSelection(true)}
+      />
 
       <SafeAreaView style={styles.board}>
-        <MineField board={board} onOpenField={onOpenField} />
+        <MineField
+          board={board}
+          onOpenField={onOpenField}
+          onSelectField={onSelectField}
+        />
       </SafeAreaView>
     </View>
   );
